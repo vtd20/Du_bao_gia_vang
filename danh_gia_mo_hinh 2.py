@@ -7,46 +7,45 @@ from pyspark.sql.functions import udf
 from pyspark.ml.linalg import Vectors, VectorUDT
 import pandas as pd
 
-
 # Tạo đối tượng Spark
 spark = SparkSession.builder.appName("GoldPricePrediction").getOrCreate()
 
 def evaluate_model(model, X_test, y_test, scaler_model, spark):
-    # Load best model
+    # Tải mô hình tốt nhất
     best_model = load_model('best_model.keras')
     
-    # Predict using the loaded model
+    # Dự đoán bằng mô hình đã tải
     y_pred = best_model.predict(X_test)
     
-    # Evaluate the model
-    result = model.evaluate(X_test, y_test)  # Assuming you have a Keras model for this
+    # Đánh giá mô hình
+    result = model.evaluate(X_test, y_test)  # Giả định bạn có một mô hình Keras cho việc này
     MAPE = mean_absolute_percentage_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
     Accuracy = 1 - MAPE
     
-    print("Test Loss:", result)
-    print("Test MAPE:", MAPE)
-    print("Test Accuracy:", Accuracy)
+    print("Mất mát trên tập kiểm tra:", result)
+    print("MAPE trên tập kiểm tra:", MAPE)
+    print("Độ chính xác trên tập kiểm tra:", Accuracy)
     print("R-squared:", r2)
     
-    # Inverse scale predictions for plotting
+    # Nghịch đảo chuẩn hóa dự đoán để vẽ biểu đồ
     to_vector_udf = udf(lambda x: Vectors.dense(x), VectorUDT())
     
-    # Convert y_test and y_pred to Spark DataFrames
+    # Chuyển đổi y_test và y_pred thành Spark DataFrames
     y_test_df = spark.createDataFrame(pd.DataFrame(y_test, columns=['features']))
     y_pred_df = spark.createDataFrame(pd.DataFrame(y_pred, columns=['features']))
     
-    # Apply inverse scaling using scaler_model
+    # Áp dụng nghịch đảo chuẩn hóa bằng scaler_model
     y_test_scaled = scaler_model.transform(y_test_df.withColumn("features", to_vector_udf("features"))).select("features")
     y_pred_scaled = scaler_model.transform(y_pred_df.withColumn("features", to_vector_udf("features"))).select("features")
     
-    # Collect results
+    # Thu thập kết quả
     y_test_true = y_test_scaled.collect()
     y_test_pred = y_pred_scaled.collect()
     
-    # Extract the values from the features columns
-    y_test_true_values = [row['features'][0] for row in y_test_true]  # Get actual true values
-    y_test_pred_values = [row['features'][0] for row in y_test_pred]  # Get predicted values
+    # Trích xuất giá trị từ các cột features
+    y_test_true_values = [row['features'][0] for row in y_test_true]  # Lấy giá trị thực tế
+    y_test_pred_values = [row['features'][0] for row in y_test_pred]  # Lấy giá trị dự đoán
     
     return y_test_true_values, y_test_pred_values
 
@@ -59,5 +58,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
