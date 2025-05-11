@@ -19,7 +19,7 @@ def load_and_preprocess_data(file_path, hdfs_output_path):
     num_rows = df.count()
     num_cols = len(df.columns)
     print("# Số lượng hàng và cột:\n")
-    print(f"Shape: ({num_rows}, {num_cols})")
+    print(f"Hình dạng: ({num_rows}, {num_cols})")
     
     # Xóa các cột không cần thiết
     df = df.drop('Vol.', 'Change %')
@@ -57,7 +57,6 @@ def load_and_preprocess_data(file_path, hdfs_output_path):
     
     # Lưu dữ liệu đã xử lý vào HDFS dưới dạng Parquet
     df.write.mode("overwrite").parquet(hdfs_output_path)
-    print(f"Data saved to HDFS at: {hdfs_output_path}")
+    print(f"Dữ liệu đã được lưu vào HDFS tại: {hdfs_output_path}")
     
     return spark, df
-
